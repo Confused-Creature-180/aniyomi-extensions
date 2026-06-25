@@ -108,7 +108,11 @@ async function loadExtensions(containerId, limit) {
   try {
     const response = await fetch(INDEX_URL);
     if (!response.ok) throw new Error('HTTP ' + response.status);
-    const extensions = await response.json();
+    // Read as text first, then convert large "id" numbers to strings to
+    // prevent JavaScript's float64 precision loss (source IDs exceed 2^53).
+    const rawText = await response.text();
+    const safeText = rawText.replace(/"id":(\d+)/g, '"id":"$1"');
+    const extensions = JSON.parse(safeText);
 
     if (!extensions || extensions.length === 0) {
       grid.innerHTML = '<p style="text-align:center;color:var(--fg-muted);grid-column:1/-1;padding:40px;">No extensions available yet. Check back soon.</p>';
