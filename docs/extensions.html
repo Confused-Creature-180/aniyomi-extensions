@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extensions — Confused Creature</title>
+  <meta name="description" content="Browse and download all Aniyomi extensions hosted in this repository.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23b8653f'/%3E%3Ctext x='50' y='68' font-size='52' font-weight='bold' fill='white' text-anchor='middle' font-family='monospace'%3EC%3C/text%3E%3C/svg%3E">
+  <script>
+    (function(){
+      try {
+        var d = document.documentElement;
+        var s = localStorage.getItem('theme');
+        var m = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var t = s || (m ? 'dark' : 'light');
+        d.className = t;
+        d.style.colorScheme = t;
+      } catch(e) { d.className = 'light'; }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="./index.html" class="brand">
+        <span class="brand-icon">C</span>
+        <span>Confused Creature</span>
+      </a>
+      <div class="nav-links">
+        <a href="./index.html">Home</a>
+        <a href="./extensions.html" class="active">Extensions</a>
+        <a href="./guides.html">Guides</a>
+        <a href="./disclaimer.html">Disclaimer</a>
+      </div>
+      <div class="nav-actions">
+        <button class="icon-btn theme-toggle" aria-label="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <a href="https://github.com/Confused-Creature-180/aniyomi-extensions" target="_blank" rel="noopener" class="icon-btn" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.73 1.27 3.4.97.11-.75.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.67 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.95 10.95 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.74.8 1.18 1.83 1.18 3.08 0 4.4-2.69 5.38-5.25 5.66.41.36.78 1.05.78 2.12v3.14c0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" style="padding-bottom:32px;">
+      <div class="container hero-content">
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M2 7h20M2 17h20M7 2v20M17 2v20"/></svg>
+          Extension Library
+        </div>
+        <h1>All Extensions</h1>
+        <p class="hero-tagline">Browse, inspect, and download every extension hosted in this repository. Tap "Download APK" to get the file directly.</p>
+        <div class="hero-actions">
+          <a href="./add-repo.html" class="btn btn-primary btn-large">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add Repo to Aniyomi
+          </a>
+        </div>
+      </div>
+      <div class="hero-glow"></div>
+    </section>
+
+    <section class="section" style="padding-top:24px;">
+      <div class="container">
+        <div class="extension-grid" id="extension-grid" data-full="true">
+          <div class="loading-skeleton">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <h2>How to Install</h2>
+          <p class="section-subtitle">After downloading an APK, you can install it directly or add the repo to Aniyomi for automatic updates.</p>
+        </div>
+        <div class="install-methods">
+          <div class="method-card">
+            <div class="method-number">1</div>
+            <h3>Direct APK Install</h3>
+            <p class="method-desc">Download the APK and install manually.</p>
+            <ol class="method-steps">
+              <li>Tap <strong>Download APK</strong> on any extension card above.</li>
+              <li>Open the downloaded file on your Android phone.</li>
+              <li>Allow installation from unknown sources if prompted.</li>
+              <li>Open Aniyomi — the extension appears in Extensions.</li>
+            </ol>
+          </div>
+          <div class="method-card">
+            <div class="method-number">2</div>
+            <h3>Add Repo for Updates</h3>
+            <p class="method-desc">Get automatic updates by adding the repo.</p>
+            <ol class="method-steps">
+              <li>Tap <strong>Add Repo to Aniyomi</strong> above.</li>
+              <li>Confirm in Aniyomi when prompted.</li>
+              <li>Install extensions from within Aniyomi.</li>
+              <li>Updates arrive automatically when new versions are published.</li>
+            </ol>
+            <a href="./guides.html" class="btn btn-secondary btn-small">Full Guide</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="brand-icon" style="width:28px;height:28px;font-size:0.9rem;">C</span>
+        <span>Confused Creature</span>
+      </div>
+      <div class="footer-links">
+        <a href="./index.html">Home</a>
+        <a href="./guides.html">Guides</a>
+        <a href="./add-repo.html">Add Repo</a>
+        <a href="./disclaimer.html">Disclaimer</a>
+        <a href="https://github.com/Confused-Creature-180/aniyomi-extensions" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <p class="footer-copy">&copy; 2026 Confused-Creature-180. Licensed under Apache 2.0.</p>
+    </div>
+  </footer>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>

@@ -1,28 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Opening Aniyomi...</title>
+  <title>Add to Aniyomi — Confused Creature</title>
   <meta name="robots" content="noindex">
-  <!-- Auto-redirect to Aniyomi app via deep link -->
   <meta http-equiv="refresh" content="0; url=aniyomi://add-repo?url=https%3A%2F%2Fraw.githubusercontent.com%2FConfused-Creature-180%2Faniyomi-extensions%2Frepo%2Findex.min.json">
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23b8653f'/%3E%3Ctext x='50' y='68' font-size='52' font-weight='bold' fill='white' text-anchor='middle' font-family='monospace'%3EC%3C/text%3E%3C/svg%3E">
   <script>
-    // Immediate JS redirect (more reliable than meta-refresh on some browsers)
+    (function(){
+      try {
+        var d = document.documentElement;
+        var s = localStorage.getItem('theme');
+        var m = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var t = s || (m ? 'dark' : 'light');
+        d.className = t;
+        d.style.colorScheme = t;
+      } catch(e) { d.className = 'light'; }
+    })();
+    // Immediate redirect
     window.location.replace(
       'aniyomi://add-repo?url=' +
       encodeURIComponent('https://raw.githubusercontent.com/Confused-Creature-180/aniyomi-extensions/repo/index.min.json')
     );
   </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/style.css">
 </head>
 <body class="redirect-page">
   <div class="redirect-container">
     <div class="redirect-spinner"></div>
     <h1>Opening Aniyomi...</h1>
     <p>If Aniyomi didn't open automatically, tap the button below:</p>
-    <a href="aniyomi://add-repo?url=https%3A%2F%2Fraw.githubusercontent.com%2FConfused-Creature-180%2Faniyomi-extensions%2Frepo%2Findex.min.json"
-       class="btn btn-primary btn-large">
+    <a href="aniyomi://add-repo?url=https%3A%2F%2Fraw.githubusercontent.com%2FConfused-Creature-180%2Faniyomi-extensions%2Frepo%2Findex.min.json" class="btn btn-primary btn-large">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
       Open Aniyomi
     </a>
     <p class="redirect-alt">Or copy this URL and paste it manually in Aniyomi:</p>
@@ -30,24 +43,23 @@
       <code>https://raw.githubusercontent.com/Confused-Creature-180/aniyomi-extensions/repo/index.min.json</code>
       <button class="btn btn-secondary btn-small" id="copy-redirect-btn">Copy</button>
     </div>
-    <p class="redirect-back"><a href="./index.html">&larr; Back to home</a></p>
+    <div class="redirect-back">
+      <a href="./index.html">&larr; Back to home</a>
+    </div>
   </div>
   <script>
     document.getElementById('copy-redirect-btn').addEventListener('click', async function() {
-      const url = 'https://raw.githubusercontent.com/Confused-Creature-180/aniyomi-extensions/repo/index.min.json';
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch (e) {
-        const ta = document.createElement('textarea');
-        ta.value = url;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
+      var url = 'https://raw.githubusercontent.com/Confused-Creature-180/aniyomi-extensions/repo/index.min.json';
+      try { await navigator.clipboard.writeText(url); }
+      catch(e) {
+        var ta = document.createElement('textarea');
+        ta.value = url; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
       }
       this.textContent = 'Copied!';
       this.classList.add('copied');
-      setTimeout(() => { this.textContent = 'Copy'; this.classList.remove('copied'); }, 2000);
+      var self = this;
+      setTimeout(function(){ self.textContent = 'Copy'; self.classList.remove('copied'); }, 2000);
     });
   </script>
 </body>
