@@ -393,11 +393,25 @@ code {
 
 .hero h1 {
   font-family: var(--font-display);
-  font-size: clamp(2.25rem, 5vw, 3.5rem);
   font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.15;
+  line-height: 1.1;
   margin-bottom: 16px;
+  color: var(--fg);
+}
+
+.hero-word-big {
+  font-size: clamp(3.5rem, 9vw, 6rem);
+  display: inline-block;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-word {
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  display: inline-block;
   color: var(--fg);
 }
 
@@ -522,9 +536,17 @@ code {
   height: 56px;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
-  background: var(--bg-elevated);
-  object-fit: cover;
+  background: linear-gradient(135deg, var(--bg-elevated), var(--surface-hover));
+  object-fit: contain;
+  padding: 8px;
   border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.extension-card:hover .ext-icon {
+  transform: scale(1.05);
+  box-shadow: var(--shadow);
 }
 
 .card-title {
@@ -575,34 +597,51 @@ code {
 }
 
 .card-meta {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
   font-size: 0.8rem;
   font-family: var(--font-mono);
 }
 
-.meta-row {
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta-item-inline {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
 }
 
 .meta-label {
   color: var(--fg-dim);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
 }
 
 .meta-value {
   color: var(--fg);
+  font-size: 0.8rem;
+}
+
+.meta-item-inline .meta-value {
   text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 500;
+}
+
+.meta-value-wrap {
+  word-break: break-all;
+  line-height: 1.4;
+  font-size: 0.75rem;
+  color: var(--fg-muted);
 }
 
 .meta-value a {
@@ -1157,4 +1196,147 @@ code {
     radial-gradient(circle at 75% 75%, var(--notebook-shadow) 1px, transparent 1px);
   background-size: 24px 24px;
   background-position: 0 0, 12px 12px;
+}
+
+/* ============================================
+   Animations — smooth, beautiful, staggered
+   ============================================ */
+
+/* Fade in + slide up (used for cards + sections) */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade in (used for sections that don't need to slide) */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scale in (used for hero badge) */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Slide down (used for header) */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apply entrance animations */
+.site-header {
+  animation: slideDown 0.4s ease forwards;
+}
+
+.hero-badge {
+  animation: scaleIn 0.5s ease 0.1s both;
+}
+
+.hero h1 {
+  animation: fadeInUp 0.6s ease 0.2s both;
+}
+
+.hero-tagline {
+  animation: fadeInUp 0.6s ease 0.35s both;
+}
+
+.hero-actions {
+  animation: fadeInUp 0.6s ease 0.5s both;
+}
+
+.repo-url-box {
+  animation: fadeInUp 0.6s ease 0.65s both;
+}
+
+.section {
+  animation: fadeInUp 0.6s ease both;
+}
+
+.section-header {
+  animation: fadeInUp 0.5s ease both;
+}
+
+.extension-card {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.method-card {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.guide-item {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.disclaimer-item {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+/* Stagger guide items */
+.guide-item:nth-child(1) { animation-delay: 0.05s; }
+.guide-item:nth-child(2) { animation-delay: 0.10s; }
+.guide-item:nth-child(3) { animation-delay: 0.15s; }
+.guide-item:nth-child(4) { animation-delay: 0.20s; }
+.guide-item:nth-child(5) { animation-delay: 0.25s; }
+.guide-item:nth-child(6) { animation-delay: 0.30s; }
+
+/* Stagger disclaimer items */
+.disclaimer-item:nth-child(1) { animation-delay: 0.05s; }
+.disclaimer-item:nth-child(2) { animation-delay: 0.10s; }
+.disclaimer-item:nth-child(3) { animation-delay: 0.15s; }
+.disclaimer-item:nth-child(4) { animation-delay: 0.20s; }
+.disclaimer-item:nth-child(5) { animation-delay: 0.25s; }
+.disclaimer-item:nth-child(6) { animation-delay: 0.30s; }
+.disclaimer-item:nth-child(7) { animation-delay: 0.35s; }
+.disclaimer-item:nth-child(8) { animation-delay: 0.40s; }
+.disclaimer-item:nth-child(9) { animation-delay: 0.45s; }
+.disclaimer-item:nth-child(10) { animation-delay: 0.50s; }
+
+/* Stagger method cards */
+.method-card:nth-child(1) { animation-delay: 0.1s; }
+.method-card:nth-child(2) { animation-delay: 0.2s; }
+
+/* Smooth theme transition — only during toggle */
+body.theme-transitioning,
+body.theme-transitioning *,
+body.theme-transitioning *::before,
+body.theme-transitioning *::after {
+  transition: background-color 0.4s ease, border-color 0.4s ease,
+              color 0.4s ease, fill 0.4s ease, stroke 0.4s ease,
+              box-shadow 0.4s ease !important;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

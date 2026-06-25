@@ -16,6 +16,11 @@ function initThemeToggle() {
 
   toggle.addEventListener('click', function() {
     const root = document.documentElement;
+    const body = document.body;
+
+    // Add transitioning class for smooth color shift
+    body.classList.add('theme-transitioning');
+
     const current = root.className;
     const next = current === 'dark' ? 'light' : 'dark';
     root.className = next;
@@ -23,6 +28,11 @@ function initThemeToggle() {
     try {
       localStorage.setItem('theme', next);
     } catch(e) {}
+
+    // Remove transitioning class after the transition completes
+    setTimeout(function() {
+      body.classList.remove('theme-transitioning');
+    }, 450);
   });
 }
 
@@ -114,7 +124,12 @@ async function loadExtensions(containerId, limit) {
     const toShow = limit ? extensions.slice(0, limit) : extensions;
 
     grid.innerHTML = '';
-    toShow.forEach(ext => grid.appendChild(createExtensionCard(ext)));
+    toShow.forEach(function(ext, i) {
+      const card = createExtensionCard(ext);
+      // Stagger the entrance animation
+      card.style.animationDelay = (i * 0.08) + 's';
+      grid.appendChild(card);
+    });
 
     // If limited and there are more, show a "view all" link
     if (limit && extensions.length > limit) {
@@ -157,12 +172,12 @@ function createExtensionCard(ext) {
     '</div>';
   }
 
-  // Metadata rows
+  // Metadata — package on its own line (wraps), version code + source ID inline
   let metaHtml = '<div class="card-meta">';
-  metaHtml += '<div class="meta-row"><span class="meta-label">Package</span><span class="meta-value">' + escapeHtml(ext.pkg) + '</span></div>';
-  metaHtml += '<div class="meta-row"><span class="meta-label">Version Code</span><span class="meta-value">' + ext.code + '</span></div>';
+  metaHtml += '<div class="meta-item"><span class="meta-label">Package</span><span class="meta-value meta-value-wrap">' + escapeHtml(ext.pkg) + '</span></div>';
+  metaHtml += '<div class="meta-item-inline"><span class="meta-label">Version Code</span><span class="meta-value">' + ext.code + '</span></div>';
   if (source) {
-    metaHtml += '<div class="meta-row"><span class="meta-label">Source ID</span><span class="meta-value">' + source.id + '</span></div>';
+    metaHtml += '<div class="meta-item-inline"><span class="meta-label">Source ID</span><span class="meta-value">' + source.id + '</span></div>';
   }
   metaHtml += '</div>';
 
