@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opening Aniyomi...</title>
+  <meta name="robots" content="noindex">
+  <!-- Auto-redirect to Aniyomi app via deep link -->
+  <meta http-equiv="refresh" content="0; url=aniyomi://add-repo?url=https%3A%2F%2Fraw.githubusercontent.com%2FConfused-Creature-180%2Faniyomi-extensions%2Frepo%2Findex.min.json">
+  <link rel="stylesheet" href="./css/style.css">
+  <script>
+    // Immediate JS redirect (more reliable than meta-refresh on some browsers)
+    window.location.replace(
+      'aniyomi://add-repo?url=' +
+      encodeURIComponent('https://raw.githubusercontent.com/Confused-Creature-180/aniyomi-extensions/repo/index.min.json')
+    );
+  </script>
+</head>
+<body class="redirect-page">
+  <div class="redirect-container">
+    <div class="redirect-spinner"></div>
+    <h1>Opening Aniyomi...</h1>
+    <p>If Aniyomi didn't open automatically, tap the button below:</p>
+    <a href="aniyomi://add-repo?url=https%3A%2F%2Fraw.githubusercontent.com%2FConfused-Creature-180%2Faniyomi-extensions%2Frepo%2Findex.min.json"
+       class="btn btn-primary btn-large">
+      Open Aniyomi
+    </a>
+    <p class="redirect-alt">Or copy this URL and paste it manually in Aniyomi:</p>
+    <div class="repo-url-box">
+      <code>https://raw.githubusercontent.com/Confused-Creature-180/aniyomi-extensions/repo/index.min.json</code>
+      <button class="btn btn-secondary btn-small" id="copy-redirect-btn">Copy</button>
+    </div>
+    <p class="redirect-back"><a href="./index.html">&larr; Back to home</a></p>
+  </div>
+  <script>
+    document.getElementById('copy-redirect-btn').addEventListener('click', async function() {
+      const url = 'https://raw.githubusercontent.com/Confused-Creature-180/aniyomi-extensions/repo/index.min.json';
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      this.textContent = 'Copied!';
+      this.classList.add('copied');
+      setTimeout(() => { this.textContent = 'Copy'; this.classList.remove('copied'); }, 2000);
+    });
+  </script>
+</body>
+</html>
