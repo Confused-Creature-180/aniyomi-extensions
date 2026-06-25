@@ -130,9 +130,14 @@ async function loadExtensions(containerId, limit) {
     grid.innerHTML = '';
     toShow.forEach(function(ext, i) {
       const card = createExtensionCard(ext);
-      // Stagger the entrance animation
-      card.style.animationDelay = (i * 0.08) + 's';
+      // Add scroll reveal classes + stagger delay
+      card.classList.add('reveal', 'reveal-up');
+      card.setAttribute('data-delay', String((i % 10) + 1));
       grid.appendChild(card);
+      // Observe the card for scroll reveal
+      if (window._revealObserver) {
+        window._revealObserver.observe(card);
+      }
     });
 
     // If limited and there are more, show a "view all" link
@@ -222,11 +227,40 @@ function initGuides() {
   });
 }
 
+/* --- Scroll Reveal (Intersection Observer) --- */
+function initScrollReveal() {
+  const reveals = document.querySelectorAll('.reveal:not(.reveal-observed)');
+  if (!reveals.length) return;
+
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('revealed');
+      } else {
+        // Remove revealed when element exits viewport so it re-animates next time
+        entry.target.classList.remove('revealed');
+      }
+    });
+  }, {
+    threshold: 0.12,
+    rootMargin: '0px 0px -40px 0px'
+  });
+
+  reveals.forEach(function(el) {
+    el.classList.add('reveal-observed');
+    observer.observe(el);
+  });
+
+  // Store observer for dynamically added elements (extension cards)
+  window._revealObserver = observer;
+}
+
 /* --- Init --- */
 document.addEventListener('DOMContentLoaded', function() {
   initThemeToggle();
   initCopyButtons();
   initGuides();
+  initScrollReveal();
 
   // Load extensions if the grid exists
   const homeGrid = document.getElementById('extension-grid');
