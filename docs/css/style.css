@@ -407,12 +407,29 @@ code {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  /* Subtle continuous hover — gentle vertical float on the "Confused" word.
+     Applied to the span (not the h1) so it composes cleanly with the h1's
+     fadeInUp entrance animation rather than replacing it. */
+  animation: heroHover 4s ease-in-out infinite;
 }
 
 .hero-word {
   font-size: clamp(2.25rem, 5vw, 3.5rem);
   display: inline-block;
   color: var(--fg);
+  /* Same hover as .hero-word-big but offset by 0.6s so the two words breathe
+     slightly out of phase — feels alive rather than mechanical. */
+  animation: heroHover 4s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+/* Subtle hovering float for the hero title words.
+   Range: -4px to +4px vertical translation (8px total travel).
+   Ease-in-out + 4s duration = slow, gentle bob — "slight" per user request.
+   Disabled automatically under prefers-reduced-motion (see global rule at end of file). */
+@keyframes heroHover {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
 }
 
 .hero-subtitle {
