@@ -86,7 +86,7 @@ class Anikoto : AnimeHttpSource(), ConfigurableAnimeSource {
     // a WebView (Chrome engine, real TLS fingerprint) to obtain a cf_clearance cookie, then
     // retries. Without this, Vidstream-2 fails with "HTTP 403" at the master m3u8 fetch.
     // The interceptor only triggers on 403/503 from Server: cloudflare — VidCloud-1 (200) is
-    // unaffected. See EXTENSIONS/anikoto/MEMORY/sites/getsources-migration-and-id-analysis.md §3.
+    // unaffected.
     @Suppress("unused") // kept for reference; no longer used after session 28
     private val noCloudflareClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -730,7 +730,7 @@ class Anikoto : AnimeHttpSource(), ConfigurableAnimeSource {
             // ★ vidwish.live (VidCloud-1) now routes to resolveVidTube too (session 26).
             //   The site migrated from getSourcesNew → getSources; resolveVidTube selects the
             //   endpoint by host. vidwish.live's data-id is audio-specific, so getSources?id=X
-            //   returns the correct audio. See EXTENSIONS/anikoto/MEMORY/sites/getsources-migration-and-id-analysis.md §1.
+            //   returns the correct audio.
             val host = iframeUrl.substringAfter("://").substringBefore("/")
             val hosterName = task.label.substringAfter(" - ")
             val result = when {
@@ -784,7 +784,7 @@ class Anikoto : AnimeHttpSource(), ConfigurableAnimeSource {
      * Forks that haven't adopted the ext-lib-16 hoster pipeline call this method instead of
      * [getHosterList]. The default base-class implementation does `GET(baseUrl + episode.url)`,
      * which fails with a DNS error if `episode.url` contains encoded metadata rather than a
-     * valid URL path (see `EXTENSIONS/anikoto/MEMORY/issues-resolutions/04-episode-url-dns-error-in-forks.md`).
+     * valid URL path.
      *
      * This override delegates to [getHosterList] (which already handles everything — decoding
      * EpisodeMeta, fetching servers, resolving streams, starting the local proxy) and flattens

@@ -58,7 +58,6 @@ class AnikotoExtractors(
             //   - megaplay.buzz (HD-1, Vidstream-2): type param respected (data-id is also audio-specific)
             //   - vidwish.live (VidCloud-1): type param respected (data-id is audio-specific)
             // The old getSourcesNew 404s on megaplay.buzz/vidwish.live — getSources replaces it everywhere.
-            // See EXTENSIONS/anikoto/MEMORY/sites/getsources-migration-and-id-analysis.md §1.
             val sourcesUrl = "https://$host/stream/getSources?id=$dataId&type=$audioType"
             AnikotoLog.d("resolveVidTube: [2/5] GET getSources: ${AnikotoLog.trunc(sourcesUrl, 80)}")
             val sourcesBody = fetchString(sourcesUrl, vidtubeApiHeaders())

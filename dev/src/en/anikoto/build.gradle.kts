@@ -17,8 +17,8 @@ android {
         // using "anikoto"), but the source code package stays at ...anikoto (no need to move files).
         // The loader does `packageName + extClass` when extClass starts with "." — that would look
         // for ...anikoto180.Anikoto which doesn't exist. Using the full path (no dot) makes the
-        // loader use it as-is → finds the class at ...anikoto.Anikoto. Verified in the loader source:
-        // SHARED/REFERENCE_HUB/aniyomi-app/.../AnimeExtensionLoader.kt:297-301.
+        // loader use it as-is → finds the class at ...anikoto.Anikoto.
+        // (Verified in the Aniyomi app's AnimeExtensionLoader.kt source.)
         val extClass = "eu.kanade.tachiyomi.animeextension.en.anikoto.Anikoto"
         val extVersionCode = 9  // v16.9 (session 49: change package to ...anikoto180 — distinguish from other publishers)
         val extVersionId = 11    // ★ STABLE — do NOT bump with versionCode.

@@ -16,8 +16,6 @@ package eu.kanade.tachiyomi.animeextension.en.anikoto
  * strip the fragment before sending requests, so the server only sees the clean path, while
  * our extension can still decode the metadata from the full string.
  *
- * See `EXTENSIONS/anikoto/MEMORY/issues-resolutions/04-episode-url-dns-error-in-forks.md` for the full analysis.
- *
  * ## Format
  *
  * **New (v16.27+):** `/watch/<slug>/ep-<epNum>#<malId>|<timestamp>|<dataIds>|<sub?1:0>|<dub?1:0>|<escapedTitle>`
