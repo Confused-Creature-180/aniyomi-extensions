@@ -37,9 +37,9 @@
 **Option 2 — Manual:**
 
 1. Open **Aniyomi** on your phone
-2. Go to **Settings → Extensions** (puzzle icon)
-3. Tap **≡ → Manage extension repos → +** (Add repo)
-4. Paste this URL:
+2. Go to **Settings**
+3. Go to **Browse** — you'll see the **Sources** section
+4. In the Sources section, find **Extension repos**, tap **Add repo**, and paste this URL:
 
 ```
 https://raw.githubusercontent.com/Confused-Creature-180/aniyomi-extensions/repo/index.min.json
@@ -65,11 +65,11 @@ Prefer to sideload? Grab the latest signed release APK from the [`apk/` folder](
 
 > *Listen closely, dear forker.*
 
-AniKoto 180 is **free and open source** under the Apache 2.0 license. You are welcome — **encouraged, even** — to study it, fork it, learn from it, and build on it.
+This repo is **free and open source** under the Apache 2.0 license. You are welcome — **encouraged, even** — to study it, fork it, learn from it, and build on it.
 
 **But.**
 
-If you lift this extension's features or any of its neat tricks into your own project, and you **don't credit this repo**…
+If you lift anything from this repo into your own project, and you **don't credit this repo**…
 
 …then **you shall be visited by one full year of remarkably specific bad luck.**
 
