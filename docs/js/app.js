@@ -158,7 +158,11 @@ function createExtensionCard(ext) {
   card.className = 'extension-card';
   if (ext.nsfw === 1) card.classList.add('nsfw');
 
-  const iconUrl = REPO_BASE + '/icon/' + ext.pkg + '.png';
+  // Use the locally-bundled icon (in assets/icons/) so the website keeps its own
+  // branding independent of the Aniyomi extension icon on the `repo` branch.
+  // Falls back to the repo URL if a local icon isn't bundled.
+  const iconUrl = 'assets/icons/' + ext.pkg + '.png';
+  const iconFallback = REPO_BASE + '/icon/' + ext.pkg + '.png';
   const apkUrl = REPO_BASE + '/apk/' + ext.apk;
   const source = (ext.sources && ext.sources.length > 0) ? ext.sources[0] : null;
 
@@ -204,7 +208,7 @@ function createExtensionCard(ext) {
 
   card.innerHTML =
     '<div class="card-header">' +
-      '<img src="' + escapeHtml(iconUrl) + '" alt="' + escapeHtml(ext.name) + '" class="ext-icon" loading="lazy" onerror="this.style.opacity=\'0.2\'">' +
+      '<img src="' + escapeHtml(iconUrl) + '" alt="' + escapeHtml(ext.name) + '" class="ext-icon" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=\'' + escapeHtml(iconFallback) + '\';}else{this.style.opacity=\'0.2\';}">' +
       '<div class="card-title">' +
         '<h3>' + escapeHtml(ext.name) + '</h3>' +
         '<div class="badges">' + badges + '</div>' +
