@@ -1,0 +1,39 @@
+# === Aniyomi Extensions — root .gitignore ===
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# Build outputs (the published APKs live in apk/ — do not commit build/ folders)
+**/build/
+**/.gradle/
+**/local.properties
+
+# Debug APKs — only release APKs are committed under apk/
+apk/*-debug.apk
+apk/*-debug-signed.apk
+
+# === SECRETS — never commit any of these ===
+# (Mirrors dev/.gitignore; the patterns are duplicated so a misplaced file
+#  at the repo root is still protected.)
+*.jks
+*.keystore
+**/credentials/
+**/keystore-info.txt
+*.jks.b64
+
+# Backups
+*.zip
+*.7z
+*.tar.gz
+aniyomi-extensions-backup/
+
+# Logs
+*.log
+dev/server.log

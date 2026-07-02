@@ -1,0 +1,36 @@
+# === dev/ — AniKoto extension Gradle project ===
+
+# Gradle / Android build outputs
+build/
+.gradle/
+local.properties
+captures/
+.cxx/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# OS noise
+.DS_Store
+Thumbs.db
+*.swp
+
+# === SECRETS — never commit these ===
+# The signing keystore + its passwords are private to the maintainer
+# (Confused-Creature-180). They are required to build a release APK that
+# can update the official "AniKoto 180" extension, but they must NEVER
+# be pushed to this repository.
+anikoto-release.jks
+*.jks
+*.keystore
+keystore-info.txt
+keystore-passwords.txt
+
+# Built APKs — release APKs are published under /apk/ at the repo root
+**/outputs/apk/**/*.apk

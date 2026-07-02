@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="tachiyomi.animeextension" />
+
+    <!-- ★ session 46: WRITE_EXTERNAL_STORAGE removed — no longer needed (logcat-only logging).
+         The localhost proxy on 127.0.0.1 doesn't need storage permission. -->
+
+    <application android:icon="@mipmap/ic_launcher" android:allowBackup="false" android:label="${appName}" android:usesCleartextTraffic="true">
+
+        <meta-data android:name="tachiyomi.animeextension.class" android:value="${extClass}" />
+        <meta-data android:name="tachiyomi.animeextension.nsfw" android:value="${nsfw}" />
+        <meta-data android:name="tachiyomi.animeextension.versionId" android:value="${versionId}" />
+
+    </application>
+
+</manifest>
