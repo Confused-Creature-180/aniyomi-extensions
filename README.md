@@ -65,27 +65,9 @@ Prefer to sideload? Grab the latest signed release APK from the [`apk/` folder](
 
 > *Listen closely, dear forker.*
 
-This repo is **free and open source** under the Apache 2.0 license. You are welcome — **encouraged, even** — to study it, fork it, learn from it, and build on it.
+This repo is **free and open source** under the Apache 2.0 license. You are welcome — **encouraged, even** — to study it, fork it, learn from it, and build on it. BUT
 
-**But.**
-
-If you lift anything from this repo into your own project, and you **don't credit this repo**…
-
-…then **you shall be visited by one full year of remarkably specific bad luck.**
-
-You will:
-
-- 🦶 Stub your smallest toe on the **same table corner**. Three times in one week.
-- 📄 Get a **paper cut** on the one finger you actually use to scroll.
-- 🧦 Lose **exactly one sock** from every pair. The other remains, pristine and lonely, forever.
-- 🪫 Watch your phone hit **1%** the *instant* you need it most.
-- 🥟 Bite into a dumpling expecting meat and get **a single, raw garlic clove** instead.
-
-The curse **does not lift** until you add a visible credit line in your README pointing back to this repo.
-
-It's a small price. The garlic clove alone isn't worth it. 🥲
-
-*Jokes aside — please be kind to the open-source community that made this possible. Credit where credit is due. 💚*
+ Credit where credit is due. 💚*
 
 ---
 
