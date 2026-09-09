@@ -100,19 +100,39 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+/* --- What's New banner sync ---
+   Keeps the release banner in lockstep with the repo index: the version
+   label and download link always point at the newest published APK. */
+function syncWhatsNew(extensions) {
+  const name = document.getElementById('whatsnew-name');
+  const badge = document.getElementById('whatsnew-version');
+  const link = document.getElementById('whatsnew-dl');
+  const ext = (extensions && extensions.length > 0) ? extensions[0] : null;
+  if (!ext) return;
+  if (name && ext.name) name.textContent = ext.name;
+  if (badge && ext.version) badge.textContent = 'v' + ext.version;
+  if (link && ext.apk) link.href = REPO_BASE + '/apk/' + ext.apk;
+}
+
 /* --- Render extension cards --- */
 async function loadExtensions(containerId, limit) {
   const grid = document.getElementById(containerId);
   if (!grid) return;
 
   try {
-    const response = await fetch(INDEX_URL);
+    // Cache-bust: raw.githubusercontent ignores query params, and {cache:'no-cache'}
+    // makes sure a freshly published release shows up immediately instead of a
+    // stale copy from the browser's HTTP cache.
+    const response = await fetch(INDEX_URL + '?t=' + Date.now(), { cache: 'no-cache' });
     if (!response.ok) throw new Error('HTTP ' + response.status);
     // Read as text first, then convert large "id" numbers to strings to
     // prevent JavaScript's float64 precision loss (source IDs exceed 2^53).
     const rawText = await response.text();
     const safeText = rawText.replace(/"id":(\d+)/g, '"id":"$1"');
     const extensions = JSON.parse(safeText);
+
+    // Keep the "Latest Update" banner (if present) in lockstep with the index
+    syncWhatsNew(extensions);
 
     if (!extensions || extensions.length === 0) {
       grid.innerHTML = '<p style="text-align:center;color:var(--fg-muted);grid-column:1/-1;padding:40px;">No extensions available yet. Check back soon.</p>';

@@ -1362,3 +1362,127 @@ body.theme-transitioning *::after {
     transform: none !important;
   }
 }
+
+/* ============================================
+   Latest Update banner ("What's New")
+   Auto-synced with the repo index via app.js
+   ============================================ */
+.whatsnew {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--notebook-margin);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* washi-tape accent, matching the notebook design system */
+.whatsnew::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+  width: 90px;
+  height: 18px;
+  background: var(--washi-tape);
+  opacity: 0.55;
+  border-radius: 2px;
+}
+
+.whatsnew-main {
+  flex: 1 1 380px;
+  min-width: 0;
+}
+
+.whatsnew-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.whatsnew-title h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.whatsnew-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  color: var(--primary-fg);
+  background: var(--primary);
+  white-space: nowrap;
+}
+
+.whatsnew-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--fg-muted);
+}
+
+.whatsnew-list li {
+  position: relative;
+  margin: 6px 0;
+  padding-left: 22px;
+}
+
+.whatsnew-list li::before {
+  content: '\2726';
+  position: absolute;
+  left: 2px;
+  color: var(--notebook-margin);
+}
+
+.whatsnew-list strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.whatsnew-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.whatsnew-note {
+  margin: 0;
+  max-width: 240px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--fg-dim);
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .whatsnew {
+    flex-direction: column;
+    padding: 20px;
+  }
+  .whatsnew-actions {
+    width: 100%;
+  }
+  .whatsnew-actions .btn {
+    justify-content: center;
+  }
+  .whatsnew-note {
+    max-width: none;
+    text-align: left;
+  }
+}
