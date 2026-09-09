@@ -1486,3 +1486,38 @@ body.theme-transitioning *::after {
     text-align: left;
   }
 }
+
+/* ============================================
+   Mobile overflow hardening
+   (long repo URL + minmax grid + stray strays)
+   ============================================ */
+
+/* Grid can overflow narrow screens: cap the min track to the container width */
+.install-methods {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
+.method-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Let the long repo URL wrap on small screens instead of pushing the page wide */
+.repo-url-box {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .repo-url-box code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+}
+
+/* Safety net: never show a horizontal scrollbar for stray decorations.
+   `clip` (unlike `hidden`) doesn't create a scroll container. */
+html,
+body {
+  overflow-x: clip;
+}
