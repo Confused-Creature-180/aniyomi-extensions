@@ -2,10 +2,10 @@
   {
     "name": "AniKoto 180",
     "pkg": "eu.kanade.tachiyomi.animeextension.en.anikoto180",
-    "apk": "aniyomi-en.anikoto180-v16.11-release.apk",
+    "apk": "aniyomi-en.anikoto180-v16.12-release.apk",
     "lang": "en",
-    "code": 11,
-    "version": "16.11",
+    "code": 12,
+    "version": "16.12",
     "nsfw": 0,
     "sources": [
       {
