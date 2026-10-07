@@ -20,7 +20,7 @@ import android.util.Log
 object AnikotoLog {
 
     private const val TAG = "Anikoto"
-    private const val EXTENSION_VERSION = "v16.9 (ext-lib 16, versionId=11 STABLE)"
+    private const val EXTENSION_VERSION = "v16.10 (ext-lib 16, versionId=11 STABLE)"
 
     fun i(msg: String) {
         Log.i(TAG, msg)

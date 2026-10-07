@@ -2,6 +2,8 @@ package eu.kanade.tachiyomi.animeextension.en.anikoto.metadata
 
 import eu.kanade.tachiyomi.animeextension.en.anikoto.AnikotoLog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -10,6 +12,7 @@ import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /**
@@ -51,8 +54,26 @@ class EpisodeMetadataFetcher(
     )
 
     private val cache = mutableMapOf<String, CachedData>()
-    private val anilistStreamingCache = mutableMapOf<String, List<AniListStreamingEpisode>>()
-    private val anilistBannerCache = mutableMapOf<String, String?>()
+    // ★ session 60: ConcurrentHashMap — fetches for DIFFERENT anime can run concurrently
+    // (parallel library refresh); plain HashMap mutations here were a latent crash class.
+    private val anilistStreamingCache = ConcurrentHashMap<String, List<AniListStreamingEpisode>>()
+    private val anilistBannerCache = ConcurrentHashMap<String, String?>()
+
+    /** ★ session 60: MAL→AniList id cache — lets Anikage enrichment survive AniList outages
+     *  (AniList is sometimes offline — user report). Once an id was resolved this session,
+     *  a later AniList failure degrades to the cached id instead of dropping Anikage. */
+    private val anilistIdCache = ConcurrentHashMap<String, String>()
+
+    /** ★ session 60: dedicated short-timeout client for metadata calls. The inherited app
+     *  client has long timeouts — one dead/slow metadata host (AniList outage, Anikage
+     *  hang) used to stall the whole episode-list load. newBuilder keeps the
+     *  CloudflareInterceptor + cookieJar. */
+    private val metadataClient: OkHttpClient = client.newBuilder()
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(12, TimeUnit.SECONDS)
+        .writeTimeout(12, TimeUnit.SECONDS)
+        .callTimeout(20, TimeUnit.SECONDS)
+        .build()
     private val apiHeaders = Headers.Builder()
         .set("User-Agent", BROWSER_UA)
         .set("Accept", "application/json, application/vnd.api+json, text/html, */*")
@@ -77,11 +98,18 @@ class EpisodeMetadataFetcher(
                 val startTime = System.currentTimeMillis()
                 AnikotoLog.d("EpisodeMetadataFetcher: fetching for malId=$malId")
 
-                // Fetch all sources: Jikan (titles) + Anikage (primary) + Kitsu (fallback) + AniList (thumbnails)
-                val jikanEps = fetchJikanEpisodes(malId)
-                val anilistId = fetchAniListId(malId)
+                // ★ session 60: independent sources fetched in PARALLEL (Jikan + AniList id +
+                // Kitsu); Anikage still follows the AniList id (it needs it). Previously all
+                // four ran sequentially — one slow/down source (e.g. an AniList outage)
+                // delayed the entire episode-list load, and the WebView-only AniList path
+                // made it worse.
+                val (jikanEps, anilistId, kitsuEps) = coroutineScope {
+                    val jikanDef = async { fetchJikanEpisodes(malId) }
+                    val anilistDef = async { fetchAniListId(malId) }
+                    val kitsuDef = async { fetchKitsuEpisodes(malId) }
+                    Triple(jikanDef.await(), anilistDef.await(), kitsuDef.await())
+                }
                 val anikageEps = if (anilistId != null) fetchAnikageEpisodes(anilistId) else emptyMap()
-                val kitsuEps = fetchKitsuEpisodes(malId)
                 val anilistStreaming = anilistStreamingCache[malId] ?: emptyList()
                 val bannerUrl = anilistBannerCache[malId]
 
@@ -91,8 +119,15 @@ class EpisodeMetadataFetcher(
                 // Synopsis:  Anikage → Kitsu
                 val merged = mergeEpisodes(anikageEps, kitsuEps, anilistStreaming, jikanEps)
 
-                val cached = CachedData(merged, bannerUrl)
-                synchronized(cache) { cache[malId] = cached }
+                // ★ session 60: cache ONLY non-empty results. Previously a total failure was
+                // cached as an empty map → the anime stayed metadata-less until app restart
+                // even after the network recovered (the poisoned-cache bug behind "some
+                // series never load their metadata").
+                if (merged.isNotEmpty()) {
+                    synchronized(cache) { cache[malId] = CachedData(merged, bannerUrl) }
+                } else {
+                    AnikotoLog.i("EpisodeMetadataFetcher: no metadata from any source for malId=$malId — NOT caching (will retry on next refresh)")
+                }
 
                 val result = applyFallbackThumbnail(merged, bannerUrl, fallbackThumbnailUrl)
                 val elapsed = System.currentTimeMillis() - startTime
@@ -100,7 +135,7 @@ class EpisodeMetadataFetcher(
                 result
             } catch (e: Exception) {
                 AnikotoLog.w("EpisodeMetadataFetcher: failed for malId=$malId — ${e.message}. Episodes will load without enrichment.")
-                synchronized(cache) { cache[malId] = CachedData(emptyMap(), null) }
+                // ★ session 60: do NOT cache the failure — the next episode-list refresh retries.
                 emptyMap()
             }
         }
@@ -159,24 +194,33 @@ class EpisodeMetadataFetcher(
         // ★ session 37: also fetch streamingEpisodes (Crunchyroll-synced thumbnails) in the same query
         val query = "query { Media(idMal: $malId, type: ANIME) { id bannerImage streamingEpisodes { title thumbnail } } }"
         val body = """{"query":"$query"}"""
-        val respBody = postJson("https://graphql.anilist.co", body) ?: return null
+        // ★ session 60: AniList outage handling (user report: "sometimes it is offline").
+        // postJson now tries plain OkHttp first (fast, timeout-bounded) and only falls back
+        // to the shared WebView. On ANY total failure we degrade gracefully to the id cached
+        // from a previous successful call — Anikage (the primary enrichment source) keeps
+        // working during AniList downtime instead of silently disappearing.
+        val respBody = postJson("https://graphql.anilist.co", body)
+        if (respBody == null) {
+            AnikotoLog.i("EpisodeMetadataFetcher: AniList unreachable (offline?) for malId=$malId — cached id available: ${anilistIdCache.containsKey(malId)}")
+            return anilistIdCache[malId]
+        }
         return try {
             val resp = json.decodeFromString(AniListMediaResponse.serializer(), respBody)
             val media = resp.data?.media
             val id = media?.id
             AnikotoLog.d("EpisodeMetadataFetcher: AniList ID for malId=$malId → $id (streamingEpisodes=${media?.streamingEpisodes?.size ?: 0})")
 
-            // Cache the streamingEpisodes + banner for later use
+            // Cache the streamingEpisodes + banner + id for later use
             if (id != null) {
-                val streamingThumbs = media?.streamingEpisodes ?: emptyList()
-                anilistStreamingCache[malId] = streamingThumbs
+                anilistIdCache[malId] = id.toString()
+                anilistStreamingCache[malId] = media?.streamingEpisodes ?: emptyList()
                 anilistBannerCache[malId] = media?.bannerImage
             }
 
-            id?.toString()
+            id?.toString() ?: anilistIdCache[malId]
         } catch (e: Exception) {
             AnikotoLog.d("EpisodeMetadataFetcher: AniList ID parse failed — ${e.message}")
-            null
+            anilistIdCache[malId]
         }
     }
 
@@ -221,8 +265,11 @@ class EpisodeMetadataFetcher(
         var nextUrl: String? = "https://kitsu.app/api/edge/anime/$kitsuId/episodes?page[limit]=20&sort=number"
         var pageCount = 0
         val maxPages = 10
+        // ★ session 60: wall-clock deadline — a long-running show used to issue up to 10
+        // sequential page fetches; with a slow Kitsu that alone delayed the episode list.
+        val deadline = System.currentTimeMillis() + 8_000
 
-        while (nextUrl != null && pageCount < maxPages) {
+        while (nextUrl != null && pageCount < maxPages && System.currentTimeMillis() < deadline) {
             pageCount++
             val body = fetchString(nextUrl!!) ?: break
             val response = try {
@@ -268,7 +315,8 @@ class EpisodeMetadataFetcher(
 
     private fun fetchJikanEpisodes(malId: String): Map<Int, JikanEpisode> {
         val url = "https://api.jikan.moe/v4/anime/$malId/episodes"
-        val body = fetchString(url) ?: return emptyMap()
+        // ★ session 60: retryOn429 — Jikan is the strictest rate-limiter of the four sources.
+        val body = fetchString(url, retryOn429 = true) ?: return emptyMap()
         val response = try {
             json.decodeFromString(JikanEpisodesResponse.serializer(), body)
         } catch (e: Exception) {
@@ -301,7 +349,7 @@ class EpisodeMetadataFetcher(
         return url.contains("anilist.co") || url.contains("kitsu.app")
     }
 
-    private fun fetchString(url: String): String? {
+    private fun fetchString(url: String, retryOn429: Boolean = false): String? {
         // For Cloudflare-protected hosts, try WebView first (skip OkHttp which gets 403/blocked)
         if (isCloudflareHost(url) && webViewFetcher != null) {
             return try {
@@ -312,49 +360,75 @@ class EpisodeMetadataFetcher(
                 null
             }
         }
-        return try {
-            val req = Request.Builder().url(url).headers(apiHeaders).build()
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) {
-                    AnikotoLog.d("EpisodeMetadataFetcher: HTTP ${resp.code} for ${url.take(80)}")
-                    return null
+        // ★ session 60: metadataClient (short timeouts) instead of the app client.
+        var httpCode = 0
+        for (attempt in 1..2) {
+            try {
+                val req = Request.Builder().url(url).headers(apiHeaders).build()
+                metadataClient.newCall(req).execute().use { resp ->
+                    httpCode = resp.code
+                    if (!resp.isSuccessful) {
+                        AnikotoLog.d("EpisodeMetadataFetcher: HTTP ${resp.code} for ${url.take(80)}")
+                        null
+                    } else {
+                        resp.body?.string()
+                    }
+                }?.let { return it }
+                // ★ session 60: Jikan rate-limits aggressively (429) — wait 1.2s, retry once.
+                if (httpCode == 429 && retryOn429 && attempt == 1) {
+                    AnikotoLog.d("EpisodeMetadataFetcher: 429 for ${url.take(60)} — waiting 1.2s, retrying once")
+                    try {
+                        Thread.sleep(1200)
+                    } catch (e: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                        return null
+                    }
+                    continue
                 }
-                resp.body?.string()
+                return null
+            } catch (e: Exception) {
+                AnikotoLog.d("EpisodeMetadataFetcher: fetch failed for ${url.take(60)} — ${e.message}")
+                return null
             }
-        } catch (e: Exception) {
-            AnikotoLog.d("EpisodeMetadataFetcher: fetch failed for ${url.take(60)} — ${e.message}")
-            null
         }
+        return null
     }
 
     private fun postJson(url: String, jsonBody: String): String? {
-        // ★ For AniList (Cloudflare-protected), use WebView with an inline fetch() that does POST
-        if (isCloudflareHost(url) && webViewFetcher != null) {
+        // ★ session 60: plain OkHttp FIRST (fast + timeout-bounded via metadataClient; the
+        // inherited CloudflareInterceptor handles any 403 challenge automatically), THEN the
+        // WebView POST as a fallback. Previously this was WebView-ONLY for AniList — an
+        // AniList outage or a busy shared WebView (locked by parallel stream resolution)
+        // silently killed the entire AniList → Anikage enrichment chain.
+        val viaOkHttp = try {
+            val body = okhttp3.RequestBody.create(
+                "application/json; charset=utf-8".toMediaTypeOrNull(),
+                jsonBody,
+            )
+            val req = Request.Builder().url(url).headers(apiHeaders).post(body).build()
+            metadataClient.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    AnikotoLog.d("EpisodeMetadataFetcher: POST HTTP ${resp.code} for ${url.take(60)}")
+                    null
+                } else {
+                    resp.body?.string()
+                }
+            }
+        } catch (e: Exception) {
+            AnikotoLog.d("EpisodeMetadataFetcher: POST failed for ${url.take(60)} — ${e.message}")
+            null
+        }
+        if (viaOkHttp != null) return viaOkHttp
+        if (webViewFetcher != null) {
             return try {
-                AnikotoLog.d("EpisodeMetadataFetcher: using WebView POST for ${url.take(60)}")
+                AnikotoLog.d("EpisodeMetadataFetcher: POST via OkHttp failed — trying WebView for ${url.take(60)}")
                 webViewFetcher.postJson(url, jsonBody)
             } catch (e: Exception) {
                 AnikotoLog.d("EpisodeMetadataFetcher: WebView POST failed — ${e.message}")
                 null
             }
         }
-        return try {
-            val body = okhttp3.RequestBody.create(
-                "application/json; charset=utf-8".toMediaTypeOrNull(),
-                jsonBody,
-            )
-            val req = Request.Builder().url(url).headers(apiHeaders).post(body).build()
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) {
-                    AnikotoLog.d("EpisodeMetadataFetcher: POST HTTP ${resp.code} for ${url.take(60)}")
-                    return null
-                }
-                resp.body?.string()
-            }
-        } catch (e: Exception) {
-            AnikotoLog.d("EpisodeMetadataFetcher: POST failed for ${url.take(60)} — ${e.message}")
-            null
-        }
+        return null
     }
 
     private fun stripHtml(text: String): String {

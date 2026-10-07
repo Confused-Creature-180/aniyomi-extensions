@@ -45,16 +45,20 @@ data class SkipData(
     val outro: List<Float> = emptyList(),
 )
 
-// ── VidTube sources: /stream/getSourcesNew?id=<data-id>&type=<audio> ─────────
+// ── VidTube sources: /stream/getSources(New)?id=<data-id>&type=<audio> ───────
+// ★ session 52: megaplay.buzz now ENCRYPTS the video URL — the response carries an
+// `enc` blob (AES-256-CBC, see video/MegaPlayDecrypt.kt) instead of plaintext
+// sources.file. Both shapes are handled by the parser in AnikotoExtractors.
 @Serializable
 data class VidTubeSourcesResponse(
     val sources: VidTubeSources? = null,
     val tracks: List<VidTubeTrack> = emptyList(),
+    val enc: String? = null,
 )
 
 @Serializable
 data class VidTubeSources(
-    val file: String = "",
+    val file: String? = null,
 )
 
 @Serializable
@@ -65,37 +69,67 @@ data class VidTubeTrack(
 )
 
 // ── Mapper API: mapper.nekostream.site/api/mal/<mal>/<ep>/<ts> ───────────────
-// Response shape: {"Kiwi-Stream-": {"sub": {"url": "..."}, "dub": {"url": "..."}}, "status": {...}}
-// Keys ending with "-" are server entries.
+// ★ session 63: LIVE-VERIFIED 2026-10-07 response shape (Sakamoto Days ep-4 and 8
+// latest-updated shows):
+//   {"Kiwi":{"sub":{"download":{"360p":"https://pahe…","720p":…,"1080p":…}},"dub":{…}},
+//    "status":{"time":…,"cache_expires_in":…}}
+// - Server keys have NO trailing dash ("Kiwi", not "Kiwi-Stream-") — the old parser
+//   required `endsWith("-")` and therefore matched NOTHING; the whole mapper path was
+//   silently dead.
+// - Streaming servers carry {"sub":{"url":…}} / {"dub":{"url":…}} — download-only
+//   entries (pahe) carry {"sub":{"download":{…}}} and are correctly skipped.
+// - Historical/other keys (yuzono reference): "gogoanime", "anivibe", "animepahe".
 
 data class MapperStreamToken(
     val serverName: String,
-    val audio: String, // "sub" or "dub"
-    val token: String, // actually a URL (base64 token to pass to /ajax/server?get=)
+    val audio: String,  // "sub" or "dub"
+    val token: String,  // full embed/player URL (mapper links are used as-is)
+    val label: String,  // display audio label: H-SUB / A-DUB (mapper servers are hardsub per reference)
 )
 
 /**
- * Parse the mapper API response into a list of [MapperStreamToken]s.
- * Only processes keys ending with "-" (server entries), looking for "sub" and "dub" children.
+ * Parse the mapper API response into a list of streaming [MapperStreamToken]s.
+ *
+ * ★ session 63 (v16.16):
+ * - Accepts server keys with OR without a trailing dash ("Kiwi", "Kiwi-", "Kiwi-Stream").
+ * - Skips non-server metadata keys ("status", "error", "message") case-insensitively.
+ * - Normalizes server display names per the yuzono/anikototheme reference:
+ *   gogoanime→Vidstream, anivibe→Vibe-Stream, animepahe/kiwi*→Kiwi-Stream.
+ * - Only entries with a STREAMING url are emitted (download-only dicts produce nothing).
  */
 fun parseMapperResponse(obj: JsonObject): List<MapperStreamToken> {
     val result = mutableListOf<MapperStreamToken>()
     for ((key, value) in obj) {
-        if (!key.endsWith("-")) continue // skip "status" etc.
-        val serverName = key.removeSuffix("-")
+        val normalizedKey = key.trim().removeSuffix("-")
+        if (normalizedKey.isEmpty() ||
+            normalizedKey.equals("status", true) ||
+            normalizedKey.equals("error", true) ||
+            normalizedKey.equals("message", true)
+        ) continue
         val serverObj = try {
             value.jsonObject
         } catch (e: Exception) {
             continue
         }
+        val serverName = mapperServerDisplayName(normalizedKey)
         for (audio in listOf("sub", "dub")) {
             val url = serverObj[audio]?.let { extractUrl(it) }
-            if (url != null) {
-                result.add(MapperStreamToken(serverName, audio, url))
+            if (!url.isNullOrBlank() && url.startsWith("http")) {
+                val label = if (audio == "sub") "H-SUB" else "A-DUB"
+                result.add(MapperStreamToken(serverName, audio, url, label))
             }
         }
     }
     return result
+}
+
+/** ★ session 63: mirror the yuzono reference's mapMapperServerName(). */
+private fun mapperServerDisplayName(key: String): String = when {
+    key.equals("gogoanime", true) -> "Vidstream"
+    key.equals("anivibe", true) -> "Vibe-Stream"
+    key.equals("animepahe", true) -> "Kiwi-Stream"
+    key.startsWith("kiwi", true) -> "Kiwi-Stream"
+    else -> key.replaceFirstChar { it.uppercase() }
 }
 
 private fun extractUrl(el: JsonElement): String? {

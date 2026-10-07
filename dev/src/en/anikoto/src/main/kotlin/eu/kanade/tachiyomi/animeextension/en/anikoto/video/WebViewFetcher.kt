@@ -150,6 +150,11 @@ class WebViewFetcher(
             if (webView != null && webViewReady) return
             mainHandler.post {
                 try {
+                    // ★ session 64 review: if a warm-up WebView is still loading (not ready
+                    // yet), this reassignment used to orphan it (never destroyed). The field
+                    // is only ever mutated on the main thread, so destroying the replaced
+                    // instance here is both correct-threaded and leak-free.
+                    webView?.destroy()
                     webView = WebView(context).apply {
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
@@ -333,13 +338,18 @@ class WebViewFetcher(
      * - Each callback increments the generation counter
      * - Only the LAST callback's extraction timer fires (1.5s delay)
      * - Stale timers detect their generation changed and abort
-     * - If first extraction returns <200 chars, retries once after 2s
+     *
+     * ★ session 57: Google's AI Mode STREAMS its answer in AFTER the page "finishes".
+     * Instead of grabbing the first text and returning it, the extractor now re-grabs
+     * every 2s until the text length stabilizes (or the deadline hits), always keeping
+     * the LONGEST text seen. This is what makes the legacy engine see the actual AI
+     * answer instead of a half-rendered "response is ready" shell.
      *
      * @param url The URL to load and scrape
-     * @param timeoutMs Overall timeout (default 20s)
-     * @return The rendered page text, or empty string on failure
+     * @param timeoutMs Overall timeout (default 25s)
+     * @return The rendered page text (longest stabilized capture), or "" on failure
      */
-    fun fetchRenderedText(url: String, timeoutMs: Long = 20_000): String {
+    fun fetchRenderedText(url: String, timeoutMs: Long = 25_000): String {
         ensureGoogleWebView()
         if (googleWebView == null) {
             AnikotoLog.e("SmartSearch: fetchRenderedText — Google WebView not available")
@@ -350,7 +360,7 @@ class WebViewFetcher(
         AnikotoLog.i("SmartSearch: scraping ${AnikotoLog.trunc(url, 100)}")
 
         val latch = CountDownLatch(1)
-        val resultHolder = arrayOfNulls<String>(1) // [0] = extracted text
+        val resultHolder = arrayOfNulls<String>(1) // [0] = longest extracted text
         val retryUsed = java.util.concurrent.atomic.AtomicBoolean(false)
 
         synchronized(googleLock) {
@@ -368,11 +378,11 @@ class WebViewFetcher(
                                     AnikotoLog.d("SmartSearch: extraction gen $myGen stale (current=${googleGenCounter.get()}), skipping")
                                     return@postDelayed
                                 }
-                                doExtract(view, myGen)
+                                doExtract(view, myGen, prevText = null)
                             }, 1500)
                         }
 
-                        private fun doExtract(view: WebView?, myGen: Int) {
+                        private fun doExtract(view: WebView?, myGen: Int, prevText: String?) {
                             if (googleGenCounter.get() != myGen) return
                             view?.evaluateJavascript("(function(){ return document.body.innerText; })()") { result ->
                                 if (googleGenCounter.get() != myGen) return@evaluateJavascript
@@ -380,23 +390,34 @@ class WebViewFetcher(
                                 val text = parseJsStringResult(result)
                                 AnikotoLog.d("SmartSearch: extracted ${text.length} chars (first 200: ${AnikotoLog.trunc(text, 200)})")
 
-                                if (text.length < 200 && !retryUsed.get()) {
-                                    // Content too short — likely consent/redirect page. Retry after 2s.
-                                    AnikotoLog.d("SmartSearch: content short (${text.length} < 200), retrying in 2s")
-                                    retryUsed.set(true)
-                                    mainHandler.postDelayed({
-                                        if (googleGenCounter.get() != myGen) return@postDelayed
-                                        view?.evaluateJavascript("(function(){ return document.body.innerText; })()") { result2 ->
-                                            if (googleGenCounter.get() != myGen) return@evaluateJavascript
-                                            val text2 = parseJsStringResult(result2)
-                                            AnikotoLog.d("SmartSearch: retry extracted ${text2.length} chars")
-                                            resultHolder[0] = text2
-                                            latch.countDown()
-                                        }
-                                    }, 2000)
-                                } else {
+                                // Keep the LONGEST text seen — AI answers only grow
+                                if (text.length >= (resultHolder[0]?.length ?: 0)) {
                                     resultHolder[0] = text
-                                    latch.countDown()
+                                }
+                                val haveTime = System.currentTimeMillis() < startTime + timeoutMs - 2500
+
+                                when {
+                                    // Content too short — likely consent/redirect page. One early retry after 2s.
+                                    text.length < 200 && !retryUsed.get() && haveTime -> {
+                                        AnikotoLog.d("SmartSearch: content short (${text.length} < 200), retrying in 2s")
+                                        retryUsed.set(true)
+                                        mainHandler.postDelayed({
+                                            if (googleGenCounter.get() == myGen) doExtract(view, myGen, prevText = null)
+                                        }, 2000)
+                                    }
+                                    // Text stable vs previous grab → done (page finished rendering)
+                                    prevText != null && text.length == prevText.length -> {
+                                        AnikotoLog.d("SmartSearch: text stable at ${text.length} chars — done")
+                                        latch.countDown()
+                                    }
+                                    // First grab OK → poll again in 2s to detect stability / streamed answers
+                                    haveTime -> {
+                                        mainHandler.postDelayed({
+                                            if (googleGenCounter.get() == myGen) doExtract(view, myGen, prevText = text)
+                                        }, 2000)
+                                    }
+                                    // Out of time → return the longest capture we have
+                                    else -> latch.countDown()
                                 }
                             }
                         }
@@ -413,8 +434,7 @@ class WebViewFetcher(
 
             // Wait for extraction or timeout
             if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {
-                AnikotoLog.e("SmartSearch: scrape timeout after ${timeoutMs}ms")
-                return ""
+                AnikotoLog.e("SmartSearch: scrape timeout after ${timeoutMs}ms — returning best capture so far")
             }
         }
 
